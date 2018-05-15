@@ -93,11 +93,20 @@ $(SIM_BUILD)/runsim.do : $(VHDL_SOURCES) $(VERILOG_SOURCES) $(CUSTOM_SIM_DEPS) $
 	@echo "vlib $(RTL_LIBRARY)" >> $@
 	@echo "vmap -c" >> $@
 	@echo "vmap $(RTL_LIBRARY) $(RTL_LIBRARY)" >> $@
-ifneq ($(VHDL_SOURCES),)
-	@echo "vcom -work $(RTL_LIBRARY) $(VCOM_ARGS) $(VHDL_SOURCES)" >> $@
+ifeq ($(TOPLEVEL_LANG),verilog)
+ifneq ($(VHDL_SOURCES),)    
+	@echo "vcom -work $(RTL_LIBRARY) $(VCOM_ARGS) $(VHDL_SOURCES)" >> $@    
 endif
 ifneq ($(VERILOG_SOURCES),)
 	@echo "vlog -work $(RTL_LIBRARY) +define+COCOTB_SIM -sv $(VLOG_ARGS) $(EXTRA_ARGS) $(VERILOG_SOURCES)" >> $@
+endif
+else
+ifneq ($(VERILOG_SOURCES),)
+	@echo "vlog -work $(RTL_LIBRARY) +define+COCOTB_SIM -sv $(VLOG_ARGS) $(EXTRA_ARGS) $(VERILOG_SOURCES)" >> $@
+endif
+ifneq ($(VHDL_SOURCES),)
+	@echo "vcom -work $(RTL_LIBRARY) $(VCOM_ARGS) $(VHDL_SOURCES)" >> $@
+endif
 endif
 ifdef SCRIPT_FILE
 	@echo "do $(SCRIPT_FILE)" >> $@
