@@ -221,7 +221,11 @@ class BusDriver(Driver):
                 bus-signals in an interface or a ``modport``.
                 (untested on ``struct``/``record``, but could work here as well).
             clock (SimHandle): A handle to the clock associated with this bus.
+        Kwargs:
             array_idx (int or None, optional): Optional index when signal is an array.
+            aliases: A dict that gives alias for bus name to give to adopt to different
+                signal naming conventions. For example for Wishbone slave
+                {"datrw": "dat_i", "datrd": "dat_o"}
     """
     
     _optional_signals = []
@@ -235,11 +239,30 @@ class BusDriver(Driver):
         Driver.__init__(self)
         self.entity = entity
         self.clock = clock
-        self.bus = Bus(self.entity, name, self._signals,
-                       self._optional_signals, array_idx=index)
-
         # Give this instance a unique name
         self.name = name if index is None else "%s_%d" % (name, index)
+
+        signals = dict([(sig, sig) for sig in self._signals])
+        optional_signals = dict([(sig, sig) for sig in self._optional_signals])
+
+        aliases = kwargs.pop("aliases")
+        if aliases is not None:
+            if not isinstance(aliases, dict):
+                raise ValueError("aliases parameter has to be a dict")
+
+            for attr_name, port_name in aliases.items():
+                if attr_name in self._signals:
+                    signals[attr_name] = port_name
+                elif attr_name in self._optional_signals:
+                    optional_signals[attr_name] = port_name
+                else:
+                    raise ValueError(
+                        "'{}' not signal of bus {}".format(
+                            attr_name, self.__class__.__name__
+                        )
+                    )
+
+        self.bus = Bus(self.entity, name, signals, optional_signals, array_idx=index)
 
     @coroutine
     def _driver_send(self, transaction, sync=True):
