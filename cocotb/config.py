@@ -35,6 +35,15 @@ import argparse
 import pkg_resources
 
 
+__all__ = ["share_dir", "prefix_dir", "makefiles_dir", "version"]
+
+
+share_dir = os.path.join(os.path.dirname(cocotb.__file__),'share')
+prefix_dir = os.path.dirname(os.path.dirname(cocotb.__file__))
+makefiles_dir = os.path.join(os.path.dirname(cocotb.__file__),'share', 'makefiles')
+version = pkg_resources.get_distribution('cocotb').version
+
+
 class PrintAction(argparse.Action):
     def __init__(self, option_strings, dest, text=None, **kwargs):
         super(PrintAction, self).__init__(option_strings, dest, nargs=0, **kwargs)
@@ -45,11 +54,6 @@ class PrintAction(argparse.Action):
         parser.exit()
 
 def main():
-
-    share_dir = os.path.join(os.path.dirname(cocotb.__file__),'share')
-    prefix_dir = os.path.dirname(os.path.dirname(cocotb.__file__))
-    makefiles_dir = os.path.join(os.path.dirname(cocotb.__file__),'share', 'makefiles')
-    version = pkg_resources.get_distribution('cocotb').version
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--prefix', help='echos the package-prefix of cocotb', action=PrintAction, text=prefix_dir)
