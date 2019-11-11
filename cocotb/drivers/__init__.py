@@ -222,18 +222,15 @@ class BusDriver(Driver):
                 (untested on ``struct``/``record``, but could work here as well).
             clock (SimHandle): A handle to the clock associated with this bus.
         Kwargs:
-            array_idx (int or None, optional): Optional index when signal is an array.
-            aliases: A dict that gives alias for bus name to give to adopt to different
-                signal naming conventions. For example for Wishbone slave
-                {"datrw": "dat_i", "datrd": "dat_o"}
+            The kwargs are passed on to __init__ of the created .bus field.
+            See cocotb.Bus.__init__() for more information.
     """
     
     _optional_signals = []
 
     def __init__(self, entity, name, clock, **kwargs):
-        # emulate keyword-only arguments in python 2
-        index = kwargs.pop("array_idx", None)
-        reject_remaining_kwargs('__init__', kwargs)
+        index = kwargs.get("array_idx")
+        kwargs["optional_signals"] = self._optional_signals + kwargs.get("optional_signals", [])
 
         self.log = SimLog("cocotb.%s.%s" % (entity._name, name))
         Driver.__init__(self)
@@ -242,27 +239,7 @@ class BusDriver(Driver):
         # Give this instance a unique name
         self.name = name if index is None else "%s_%d" % (name, index)
 
-        signals = dict([(sig, sig) for sig in self._signals])
-        optional_signals = dict([(sig, sig) for sig in self._optional_signals])
-
-        aliases = kwargs.pop("aliases")
-        if aliases is not None:
-            if not isinstance(aliases, dict):
-                raise ValueError("aliases parameter has to be a dict")
-
-            for attr_name, port_name in aliases.items():
-                if attr_name in self._signals:
-                    signals[attr_name] = port_name
-                elif attr_name in self._optional_signals:
-                    optional_signals[attr_name] = port_name
-                else:
-                    raise ValueError(
-                        "'{}' not signal of bus {}".format(
-                            attr_name, self.__class__.__name__
-                        )
-                    )
-
-        self.bus = Bus(self.entity, name, signals, optional_signals, array_idx=index)
+        self.bus = Bus(self.entity, name, self._signals, **kwargs)
 
     @coroutine
     def _driver_send(self, transaction, sync=True):
