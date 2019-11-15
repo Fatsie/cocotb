@@ -46,7 +46,6 @@ class Wishbone(BusMonitor):
     replyTypes = {1 : "ack", 2 : "err", 3 : "rty"}  
 
     def __init__(self, *args, **kwargs):
-        self._width = kwargs.pop('width', 32)
         BusMonitor.__init__(self, *args, **kwargs)
         # Drive some sensible defaults (setimmediatevalue to avoid x asserts)
         self.bus.ack.setimmediatevalue(0)
