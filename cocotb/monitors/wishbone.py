@@ -45,8 +45,8 @@ class Wishbone(BusMonitor):
     _optional_signals = ["err", "stall", "rty"]
     replyTypes = {1 : "ack", 2 : "err", 3 : "rty"}  
 
-    def __init__(self, *args, **kwargs):
-        BusMonitor.__init__(self, *args, **kwargs)
+    def __init__(self, entity, name, **kwargs):
+        BusMonitor.__init__(self, entity, name, **kwargs)
         # Drive some sensible defaults (setimmediatevalue to avoid x asserts)
         self.bus.ack.setimmediatevalue(0)
         self.bus.datrd.setimmediatevalue(0)
@@ -87,11 +87,9 @@ class WishboneSlave(Wishbone):
         while True:        
             yield int(1)          
 
-    def __init__(self, *args, **kwargs):
-        datGen = kwargs.pop('datgen', None)
-        ackGen = kwargs.pop('ackgen', None)
-        waitAckGen = kwargs.pop('waitreplygen', None)
-        waitStallGen = kwargs.pop('waitstallgen', None)
+    def __init__(self, entity, name, *,
+                 datGen=None, ackGen=None, watiAckGen=None, waitStallGen=None,
+                 **kwargs):
         #init instance variables    
         self._acked_ops      = 0  # ack cntr. wait for equality with number of Ops before releasing lock
         self._reply_Q        = Queue() # save datwr, sel, idle
@@ -115,7 +113,7 @@ class WishboneSlave(Wishbone):
         if waitStallGen is not None:
             self._waitStallGen  = self.bitSeqGen(waitStallGen)
             
-        Wishbone.__init__(self, *args, **kwargs)
+        Wishbone.__init__(self, entity, name, **kwargs)
         cocotb.fork(self._stall())
         cocotb.fork(self._clk_cycle_counter())
         cocotb.fork(self._ack())
