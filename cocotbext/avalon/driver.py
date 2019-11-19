@@ -241,8 +241,11 @@ class AvalonMemory(BusDriver):
             "MaxWaitReqLen": 4,  # maximum value of waitrequest
             }
 
-    def __init__(self, entity, name, clock, readlatency_min=1,
-                 readlatency_max=1, memory=None, avl_properties={}, **kwargs):
+    def __init__(self, entity, name, clock, **kwargs):
+        readlatency_min = kwargs.pop('readlatency_min', 1)
+        readlatency_max = kwargs.pop('readlatency_max', 1)
+        memory = kwargs.pop('memory', None)
+        avl_properties = kwargs.pop('avl_properties', {})
         BusDriver.__init__(self, entity, name, clock, **kwargs)
 
         for key, value in avl_properties.items():

@@ -217,9 +217,10 @@ class AXI4Slave(BusDriver):
         "BID",     "RID",     "WID"
     ]
 
-    def __init__(self, entity, name, clock, memory, callback=None, event=None,
-                 big_endian=False, **kwargs):
-
+    def __init__(self, entity, name, clock, memory, **kwargs):
+        callback = kwargs.pop('callback', None)
+        event = kwargs.pop('event', None)
+        big_endian = kwargs.pop('big_endian', False)
         BusDriver.__init__(self, entity, name, clock, **kwargs)
         self.clock = clock
 

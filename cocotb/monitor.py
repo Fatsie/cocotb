@@ -74,8 +74,9 @@ class Monitor(object):
             `Event.data` is set to the received transaction.
     """
 
-    def __init__(self, callback=None, event=None):
-        self._event = event
+    def __init__(self, **kwargs):
+        self._event = kwargs.pop('event', None)
+        callback = kwargs.pop('callback', None)
         self._wait_event = Event()
         self._recvQ = deque()
         self._callbacks = []
@@ -173,17 +174,21 @@ class BusMonitor(Monitor):
     _signals = []
     _optional_signals = []
 
-    def __init__(self, entity, name, clock, reset=None, reset_n=None,
-                 callback=None, event=None, bus_separator="_", array_idx=None):
+    def __init__(self, entity, name, clock, **kwargs):
+        callback = kwargs.pop('callback', None)
+        event = kwargs.pop('event', None)
+
+        self._reset = kwargs.pop('reset', None)
+        self._reset_n = kwargs.pop('reset_n', None)
         self.log = SimLog("cocotb.%s.%s" % (entity._name, name))
         self.entity = entity
         self.name = name
         self.clock = clock
-        self.bus = Bus(self.entity, self.name, self._signals,
-                       optional_signals=self._optional_signals,
-                       bus_separator=bus_separator, array_idx=array_idx)
-        self._reset = reset
-        self._reset_n = reset_n
+        self.bus = Bus(
+            entity, name, self._signals, optional_signals=self._optional_signals,
+            **kwargs
+        )
+
         Monitor.__init__(self, callback=callback, event=event)
 
     @property
