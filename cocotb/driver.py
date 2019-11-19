@@ -320,3 +320,8 @@ def polled_socket_attachment(driver, sock):
             driver.log.info("Remote end closed the connection")
             break
         driver.append(data)
+
+
+class SimpleBusDriver(BusDriver):
+    """``BusDriver`` with ``Bus`` bus type"""
+    _bus_class = Bus

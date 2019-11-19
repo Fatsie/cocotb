@@ -199,3 +199,8 @@ class BusMonitor(Monitor, abc_ABC):
 
     def __repr__(self):
         return "{}({!r})".format(self.__class__.__name__, self.bus)
+
+
+class SimpleBusMonitor(BusMonitor):
+    """``BusMonitor`` with ``Bus`` bus type"""
+    _bus_class = Bus
