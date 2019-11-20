@@ -222,18 +222,21 @@ class BusDriver(Driver, abc_ABC):
         self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__,  str(self.bus)))
 
     @coroutine
-    def _driver_send(self, transaction, sync=True):
+    def _driver_send(self, transaction, sync=None):
         """Implementation for BusDriver.
 
         Args:
             transaction: The transaction to send.
             sync (bool, optional): Synchronize the transfer by waiting for a rising edge.
+                Default to ``True`` when bus has :attr:`clock` attribute, otherwise ``False``
         """
+        if sync is None:
+            sync = hasattr(self.bus, "clock")
         if sync:
             try:
                 event = self.bus.clock_event
             except:
-                self.log.error("Synced _driver_send() used with non-clocked bus")
+                raise ValueError("Synced _driver_send() used with non-clocked bus")
             yield event
         self.bus <= transaction
 
