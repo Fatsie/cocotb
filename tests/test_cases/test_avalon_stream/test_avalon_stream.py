@@ -29,7 +29,7 @@ class AvalonSTTB(object):
         self.expected_output = []
         self.scoreboard.add_interface(self.stream_out, self.expected_output)
 
-        self.backpressure = BitDriver(self.dut.aso_ready, self.dut.clk)
+        self.backpressure = BitDriver(self.dut.aso_ready, self.clkedge, wave())
 
     @cocotb.coroutine
     def initialise(self):
@@ -38,6 +38,7 @@ class AvalonSTTB(object):
         for _ in range(3):
             yield self.clkedge
         self.dut.reset <= 1
+        self.backpressure.start()
         yield self.clkedge
 
     @cocotb.coroutine
@@ -54,7 +55,6 @@ def test_avalon_stream(dut):
 
     tb = AvalonSTTB(dut)
     yield tb.initialise()
-    tb.backpressure.start(wave())
 
     for _ in range(20):
         data = random.randint(0,(2^7)-1)

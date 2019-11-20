@@ -44,48 +44,48 @@ class BitDriver(object):
     """Drives a signal onto a single bit.
 
     Useful for exercising ready/valid flags.
+
+    Args:
+        signal (SimHandle): the single bit signal to drive
+        event: the event; typically RisingEdge(clk)
+        generator (generator, optional): Generator yielding data.
+            The generator should yield tuples ``(on, off)``
+            with the number of cycles to be on, 
+            followed by the number of cycles to be off.
+            The generator has to go on forever.
+
+            Example::
+                generator=((1, i % 5) for i in itertools.count())
     """
-    def __init__(self, signal, clk, generator=None):
+    def __init__(self, signal, event, generator):
         self._signal = signal
-        self._clk = clk
+        self._event = event
         self._generator = generator
 
-    def start(self, generator=None):
+    def start(self):
         """Start generating data.
 
-        Args:
-            generator (generator, optional): Generator yielding data.
-                The generator should yield tuples ``(on, off)``
-                with the number of cycles to be on, 
-                followed by the number of cycles to be off.
-                Typically the generator should go on forever.
-
-                Example::
-
-                    bit_driver.start((1, i % 5) for i in itertools.count())
         """
-        self._cr = cocotb.fork(self._cr_twiddler(generator=generator))
+        self._cr = cocotb.fork(self._cr_twiddler())
 
     def stop(self):
         """Stop generating data."""
         self._cr.kill()
 
-    @cocotb.coroutine
-    def _cr_twiddler(self, generator=None):
-        if generator is None and self._generator is None:
-            raise Exception("No generator provided!")
-        if generator is not None:
-            self._generator = generator
+    def change_generator(self, generator):
+        """Change the generator."""
+        self._generator = generator
 
-        # Actual thread
+    @cocotb.coroutine
+    def _cr_twiddler(self):
         while True:
             on, off = next(self._generator)
             self._signal <= 1
             for _ in range(on):
-                yield RisingEdge(self._clk)
+                yield self._event
             self._signal <= 0
             for _ in range(off):
-                yield RisingEdge(self._clk)
+                yield self._event
 
 
 class Driver(object):
