@@ -140,7 +140,7 @@ class AvalonMMMaster(AvalonMMDriver):
 
         # Apply values for next clock edge
         if sync:
-            yield RisingEdge(self.clock)
+            yield self.bus.clock_event
         self.bus.address <= address
         self.bus.read <= 1
         if hasattr(self.bus, "byteenable"):
@@ -151,7 +151,7 @@ class AvalonMMMaster(AvalonMMDriver):
         # Wait for waitrequest to be low
         if hasattr(self.bus, "waitrequest"):
             yield StableValue(self.bus.waitrequest, 0, extra_event=True)
-        yield RisingEdge(self.clock)
+        yield self.bus.clock_event
 
         # Deassert read
         self.bus.read <= 0
@@ -164,7 +164,7 @@ class AvalonMMMaster(AvalonMMDriver):
         self.bus.address <= v
 
         if hasattr(self.bus, "readdatavalid"):
-            yield StableValue(self.bus.readdatavalid, 1, event=RisingEdge(self.clock))
+            yield StableValue(self.bus.readdatavalid, 1, event=self.bus.clock_event)
         else:
             # Assume readLatency = 1 if no readdatavalid
             # FIXME need to configure this,
@@ -196,7 +196,7 @@ class AvalonMMMaster(AvalonMMDriver):
         yield self._acquire_lock()
 
         # Apply values to bus
-        yield RisingEdge(self.clock)
+        yield self.bus.clock_event
         self.bus.address <= address
         self.bus.writedata <= value
         self.bus.write <= 1
@@ -210,7 +210,7 @@ class AvalonMMMaster(AvalonMMDriver):
             yield StableValue(self.bus.waitrequest, 0, event=RisingEdge(self.clock))
 
         # Deassert write
-        yield RisingEdge(self.clock)
+        yield self.bus.clock_event
         self.bus.write <= 0
         if hasattr(self.bus, "byteenable"):
             self.bus.byteenable <= 0
@@ -363,7 +363,7 @@ class AvalonMemory(BusDriver):
     @coroutine
     def _writing_byte_value(self, byteaddr):
         """Writing value in _mem with byteaddr size."""
-        yield FallingEdge(self.clock)
+        yield FallingEdge(self.bus.clock)
         for i in range(self.dataByteSize):
             data = self.bus.writedata.value.integer
             addrtmp = byteaddr + i
@@ -379,7 +379,7 @@ class AvalonMemory(BusDriver):
                 waitingtime = range(random.randint(0, randmax))
                 for waitreq in waitingtime:
                     self.bus.waitrequest <= 1
-                    yield RisingEdge(self.clock)
+                    yield self.bus.clock_event
             else:
                 yield NextTimeStep()
 
@@ -538,7 +538,7 @@ class AvalonSTDriver(ValidatedBusDriver):
         """
         yield ReadOnly()
         while not self.bus.ready.value:
-            yield RisingEdge(self.clock)
+            yield self.bus.clock_event
             yield ReadOnly()
 
     @coroutine
@@ -556,13 +556,13 @@ class AvalonSTDriver(ValidatedBusDriver):
         self.bus.valid <= 0
 
         if sync:
-            yield RisingEdge(self.clock)
+            yield self.bus.clock_event
 
         # Insert a gap where valid is low
         if not self.on:
             self.bus.valid <= 0
             for _ in range(self.off):
-                yield RisingEdge(self.clock)
+                yield self.bus.clock_event
 
             # Grab the next set of on/off values
             self._next_valids()
@@ -581,7 +581,7 @@ class AvalonSTDriver(ValidatedBusDriver):
         if hasattr(self.bus, "ready"):
             yield self._wait_ready()
 
-        yield RisingEdge(self.clock)
+        yield self.bus.clock_event
         self.bus.valid <= 0
         word.binstr   = "x" * len(self.bus.data)
         self.bus.data <= word
@@ -667,7 +667,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
         """
         yield ReadOnly()
         while not self.bus.ready.value:
-            yield RisingEdge(self.clock)
+            yield self.bus.clock_event
             yield ReadOnly()
 
     @coroutine
@@ -676,7 +676,6 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
             string (str): A string of bytes to send over the bus.
             channel (int): Channel to send the data on.
         """
-        # Avoid spurious object creation by recycling
         firstword = True
 
         # FIXME: buses that aren't an integer numbers of bytes
@@ -705,13 +704,13 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
 
         while string:
             if not firstword or (firstword and sync):
-                yield RisingEdge(self.clock)
+                yield self.bus.clock_event
 
             # Insert a gap where valid is low
             if not self.on:
                 self.bus.valid <= 0
                 for _ in range(self.off):
-                    yield RisingEdge(self.clock)
+                    yield self.bus.clock_event
 
                 # Grab the next set of on/off values
                 self._next_valids()
@@ -755,7 +754,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
             if hasattr(self.bus, "ready"):
                 yield self._wait_ready()
 
-        yield RisingEdge(self.clock)
+        yield self.bus.clock_event
         self.bus.valid <= 0
         self.bus.endofpacket <= 0
         word.binstr   = "x" * len(self.bus.data)
@@ -782,7 +781,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
 
         for word in pkt:
             if not firstword or (firstword and sync):
-                yield RisingEdge(self.clock)
+                yield self.bus.clock_event
 
             firstword = False
 
@@ -790,7 +789,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
             if not self.on:
                 self.bus.valid <= 0
                 for _ in range(self.off):
-                    yield RisingEdge(self.clock)
+                    yield self.bus.clock_event
 
                 # Grab the next set of on/off values
                 self._next_valids()
@@ -809,7 +808,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
                 if hasattr(self.bus, "ready"):
                     yield self._wait_ready()
 
-        yield RisingEdge(self.clock)
+        yield self.bus.clock_event
         self.bus.valid <= 0
 
     @coroutine

@@ -188,22 +188,11 @@ class BusMonitor(Monitor, abc_ABC):
         event = kwargs.pop('event', None)
         abc_ABC.__init__(self)
 
-        self._reset = kwargs.pop('reset', None)
-        self._reset_n = kwargs.pop('reset_n', None)
         self.clock = kwargs.get('clock')
         self.bus = self.__class__._bus_type(**kwargs)
         self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__, str(self.bus)))
 
         Monitor.__init__(self, callback=callback, event=event)
-
-    @property
-    def in_reset(self):
-        """Boolean flag showing whether the bus is in reset state or not."""
-        if self._reset_n is not None:
-            return not bool(self._reset_n.value.integer)
-        if self._reset is not None:
-            return bool(self._reset.value.integer)
-        return False
 
     def __str__(self):
         return str(self.bus) + "_monitor"

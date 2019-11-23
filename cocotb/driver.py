@@ -218,7 +218,6 @@ class BusDriver(Driver, abc_ABC):
 
     def __init__(self, **bus_kwargs):
         Driver.__init__(self)
-        self.clock = bus_kwargs.get('clock')
         self.bus = self.__class__._bus_type(**bus_kwargs)
         self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__,  str(self.bus)))
 
@@ -231,7 +230,11 @@ class BusDriver(Driver, abc_ABC):
             sync (bool, optional): Synchronize the transfer by waiting for a rising edge.
         """
         if sync:
-            yield RisingEdge(self.clock)
+            try:
+                event = self.bus.clock_event
+            except:
+                self.log.error("Synced _driver_send() used with non-clocked bus")
+            yield event
         self.bus <= transaction
 
     def __str__(self):
@@ -299,8 +302,12 @@ def polled_socket_attachment(driver, sock):
     import errno
     sock.setblocking(False)
     driver.log.info("Listening for data from %s" % repr(sock))
+    try:
+        event = self.bus.clock_event
+    except:
+        raise ValueError("polled_socket_attachment called with non-clocked bus")
     while True:
-        yield RisingEdge(driver.clock)
+        yield event
         try:
             data = sock.recv(4096)
         except socket.error as e:
