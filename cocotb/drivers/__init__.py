@@ -45,6 +45,11 @@ class BitDriver(object):
     Useful for exercising ready/valid flags.
     """
     def __init__(self, signal, clk, generator=None):
+        warnings.warn(
+            "Use of cocotb.drivers.* is deprecated\n"
+            "\tPlease, convert your code to use cocotb.driver.*",
+            stacklevel=2
+        )
         self._signal = signal
         self._clk = clk
         self._generator = generator
@@ -94,6 +99,11 @@ class Driver(object):
     pins of the interface.  This may consume simulation time.
     """
     def __init__(self):
+        warnings.warn(
+            "Use of cocotb.drivers.* is deprecated\n"
+            "\tPlease, convert your code to use cocotb.driver.*",
+            stacklevel=2
+        )
         """Constructor for a driver instance."""
         self._pending = Event(name="Driver._pending")
         self._sendQ = deque()

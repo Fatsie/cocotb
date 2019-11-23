@@ -38,13 +38,13 @@ import cocotb
 from cocotb.decorators import coroutine
 from cocotb.triggers import (RisingEdge, FallingEdge, ReadOnly, NextTimeStep, Event,
                              StableValue)
-from cocotb.drivers import BusDriver, ValidatedBusDriver
+from cocotb.driver import BusDriver, ValidatedBusDriver
 from cocotb.utils import hexdump
 from cocotb.binary import BinaryValue
 from cocotb.result import ReturnValue, TestError
 
 
-class AvalonMM(BusDriver):
+class AvalonMMDriver(BusDriver):
     """Avalon Memory Mapped Interface (Avalon-MM) Driver.
 
     Currently we only support the mode required to communicate with SF
@@ -94,11 +94,11 @@ class AvalonMM(BusDriver):
         pass
 
 
-class AvalonMaster(AvalonMM):
+class AvalonMMMaster(AvalonMMDriver):
     """Avalon Memory Mapped Interface (Avalon-MM) Master."""
     def __init__(self, entity, name, clock, **kwargs):
-        AvalonMM.__init__(self, entity, name, clock, **kwargs)
-        self.log.debug("AvalonMaster created")
+        AvalonMMDriver.__init__(self, entity, name, clock, **kwargs)
+        self.log.debug("AvalonMMMaster created")
         self.busy_event = Event("%s_busy" % name)
         self.busy = False
 
@@ -136,7 +136,7 @@ class AvalonMaster(AvalonMM):
         """
         if not self._can_read:
             self.log.error("Cannot read - have no read signal")
-            raise TestError("Attempt to read on a write-only AvalonMaster")
+            raise TestError("Attempt to read on a write-only AvalonMMMaster")
 
         yield self._acquire_lock()
 
@@ -502,7 +502,7 @@ class AvalonMemory(BusDriver):
                         self.bus.waitrequest <= 1
 
 
-class AvalonST(ValidatedBusDriver):
+class AvalonSTDriver(ValidatedBusDriver):
     """Avalon Streaming Interface (Avalon-ST) Driver"""
 
     _signals = ["valid", "data"]
@@ -514,7 +514,7 @@ class AvalonST(ValidatedBusDriver):
         config = kwargs.pop('config', {})
         ValidatedBusDriver.__init__(self, entity, name, clock, **kwargs)
 
-        self.config = AvalonST._default_config.copy()
+        self.config = AvalonSTDriver._default_config.copy()
 
         for configoption, value in config.items():
             self.config[configoption] = value
@@ -587,7 +587,7 @@ class AvalonST(ValidatedBusDriver):
         self.log.debug("Successfully sent Avalon transmission: %r", value)
 
 
-class AvalonSTPkts(ValidatedBusDriver):
+class AvalonSTPktsDriver(ValidatedBusDriver):
     """Avalon Streaming Interface (Avalon-ST) Driver, packetized."""
 
     _signals = ["valid", "data", "startofpacket", "endofpacket"]
@@ -604,7 +604,7 @@ class AvalonSTPkts(ValidatedBusDriver):
         config = kwargs.pop('config', {})
         ValidatedBusDriver.__init__(self, entity, name, clock, **kwargs)
 
-        self.config = AvalonSTPkts._default_config.copy()
+        self.config = AvalonSTPktsDriver._default_config.copy()
 
         # Set default config maxChannel to max value on channel bus
         if hasattr(self.bus, 'channel'):

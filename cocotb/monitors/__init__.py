@@ -34,6 +34,7 @@ the transactions.
 """
 
 from collections import deque
+import warnings
 
 import cocotb
 from cocotb.bus import Bus
@@ -75,6 +76,11 @@ class Monitor(object):
     """
 
     def __init__(self, callback=None, event=None):
+        warnings.warn(
+            "Use of cocotb.monitors.* is deprecated\n"
+            "\tPlease, convert your code to use cocotb.monitor.*",
+            stacklevel=2
+        )
         self._event = event
         self._wait_event = Event()
         self._recvQ = deque()

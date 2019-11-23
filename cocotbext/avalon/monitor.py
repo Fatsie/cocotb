@@ -32,11 +32,9 @@ See https://www.intel.com/content/dam/www/programmable/us/en/pdfs/literature/man
 NB Currently we only support a very small subset of functionality.
 """
 
-import warnings
-
 from cocotb.utils import hexdump
 from cocotb.decorators import coroutine
-from cocotb.monitors import BusMonitor
+from cocotb.monitor import BusMonitor
 from cocotb.triggers import RisingEdge, ReadOnly, StableCondition
 from cocotb.binary import BinaryValue
 
@@ -44,7 +42,7 @@ class AvalonProtocolError(Exception):
     pass
 
 
-class AvalonST(BusMonitor):
+class AvalonSTMonitor(BusMonitor):
     """Avalon-ST bus.
 
     Non-packetized so each valid word is a separate transaction.
@@ -82,7 +80,7 @@ class AvalonST(BusMonitor):
             self._recv(vec.buff)
 
 
-class AvalonSTPkts(BusMonitor):
+class AvalonSTPktsMonitor(BusMonitor):
     """Packetized Avalon-ST bus.
 
     Args:
@@ -227,17 +225,3 @@ class AvalonSTPkts(BusMonitor):
                             raise AvalonProtocolError(
                                 "In-Packet Timeout. Didn't receive any valid data for %d cycles!" %
                                 invalid_cyclecount)
-
-class AvalonSTPktsWithChannel(AvalonSTPkts):
-    """Packetized AvalonST bus using channel.
-
-    This class is deprecated. Use AvalonSTPkts(..., report_channel=True, ...)
-    """
-
-    def __init__(self, entity, name, clock, **kwargs):
-        warnings.warn(
-            "Use of AvalonSTPktsWithChannel is deprecated\n"
-            "\tUse AvalonSTPkts(..., report_channel=True, ...)",
-            DeprecationWarning, stacklevel=2
-        )
-        AvalonSTPkts.__init__(self, entity, name, clock, report_channel=True, **kwargs)

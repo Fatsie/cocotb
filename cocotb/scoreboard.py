@@ -33,7 +33,8 @@ import logging
 
 from cocotb.utils import hexdump, hexdiffs
 from cocotb.log import SimLog
-from cocotb.monitors import Monitor
+from cocotb.monitors import Monitor as LegacyMonitor
+from cocotb.monitor import Monitor
 from cocotb.result import TestFailure, TestSuccess
 
 
@@ -202,7 +203,7 @@ class Scoreboard(object):
         self.expected[monitor] = expected_output
 
         # Enforce some type checking as we only work with a real monitor
-        if not isinstance(monitor, Monitor):
+        if not isinstance(monitor, (Monitor, LegacyMonitor)):
             raise TypeError("Expected monitor on the interface but got %s" %
                             (monitor.__class__.__name__))
 

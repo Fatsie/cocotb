@@ -7,13 +7,13 @@ import struct
 import sys
 
 import cocotb
-from cocotb.drivers import BitDriver
-from cocotb.drivers.avalon import AvalonST as AvalonSTDriver
-from cocotb.monitors.avalon import AvalonST as AvalonSTMonitor
+from cocotb.driver import BitDriver
 from cocotb.triggers import RisingEdge
 from cocotb.clock import Clock
 from cocotb.scoreboard import Scoreboard
 from cocotb.generators.bit import wave
+
+from cocotbext.avalon import AvalonSTDriver, AvalonSTMonitor
 
 class AvalonSTTB(object):
     """Testbench for avalon basic stream"""

@@ -36,11 +36,12 @@ Also used as regression test of cocotb capabilities
 import logging
 
 import cocotb
-from cocotb.drivers.avalon import AvalonMemory
 from cocotb.triggers import (Timer, Join, RisingEdge, FallingEdge, Edge,
                              ReadOnly, ReadWrite)
 from cocotb.clock import Clock
 from cocotb.result import ReturnValue, TestFailure, TestError, TestSuccess
+
+from cocotbext.avalon import AvalonMemory
 
 
 
