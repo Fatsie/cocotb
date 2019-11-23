@@ -220,9 +220,9 @@ class Scoreboard(object):
             """Called back by the monitor when a new transaction has been
             received."""
 
-            if monitor.name:
-                log_name = self.log.name + '.' + monitor.name
-            else:
+            try:
+                log_name = self.log.name + '.' + str(monitor.bus)
+            except AttributeError:
                 log_name = self.log.name + '.' + monitor.__class__.__name__
 
             log = logging.getLogger(log_name)

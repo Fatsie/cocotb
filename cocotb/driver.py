@@ -229,15 +229,11 @@ class BusDriver(Driver):
 
         self.log = SimLog("cocotb.%s.%s" % (entity._name, name))
         Driver.__init__(self)
-        self.entity = entity
         self.clock = clock
         self.bus = Bus(
-            self.entity, name, self._signals, optional_signals=self._optional_signals,
+            entity, name, self._signals, optional_signals=self._optional_signals,
             **kwargs
         )
-
-        # Give this instance a unique name
-        self.name = name if index is None else "%s_%d" % (name, index)
 
     @coroutine
     def _driver_send(self, transaction, sync=True):
@@ -252,8 +248,10 @@ class BusDriver(Driver):
         self.bus <= transaction
 
     def __str__(self):
-        """Provide the name of the bus"""
-        return str(self.name)
+        return str(self.bus) + "_driver"
+
+    def __repr__(self):
+        return "{}({!r})".format(self.__class__.__name__, self.bus)
 
 
 class ValidatedBusDriver(BusDriver):

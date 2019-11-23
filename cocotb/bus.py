@@ -76,6 +76,7 @@ class Bus(object):
         """
         self._entity = entity
         self._name = name
+        self._index = array_idx
         self._signals = {}
 
         for attr_name, sig_name in _build_sig_attr_dict(signals).items():
@@ -199,6 +200,18 @@ class Bus(object):
         """Overload the less than or equal to operator for value assignment"""
         self.drive(value)
         return AssignmentResult(self, value)
+
+    def __str__(self):
+        s = self._name if self._name is not None else self._entitiy._name
+        s += "_bus"
+        if self._index is not None:
+            s += "[%d]".format(self._index)
+        return s
+
+    def __repr__(self):
+        return "{}({!r},{!r},{!r})".format(
+            self.__class__.__name__, self._entity, self._name, self._index
+        )
 
 
 class TypedBus(Bus, abc_ABC):

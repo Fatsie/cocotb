@@ -126,7 +126,7 @@ class AvalonSTPktsMonitor(BusMonitor):
         if (num_data_symbols > 1 and not hasattr(self.bus, 'empty')):
             raise AttributeError(
                 "%s has %i data symbols, but contains no object named empty" %
-                (self.name, num_data_symbols))
+                (str(self), num_data_symbols))
 
         self.config["useEmpty"] = (num_data_symbols > 1)
 
@@ -134,12 +134,12 @@ class AvalonSTPktsMonitor(BusMonitor):
             if len(self.bus.channel) > 128:
                 raise AttributeError("AvalonST interface specification defines channel width as 1-128. "
                                      "%d channel width is %d" %
-                                     (self.name, len(self.bus.channel)))
+                                     (str(self), len(self.bus.channel)))
             maxChannel = (2 ** len(self.bus.channel)) -1
             if self.config['maxChannel'] > maxChannel:
                 raise AttributeError("%s has maxChannel=%d, but can only support a maximum channel of "
                                      "(2**channel_width)-1=%d, channel_width=%d" %
-                                     (self.name, self.config['maxChannel'], maxChannel, len(self.bus.channel)))
+                                     (str(self), self.config['maxChannel'], maxChannel, len(self.bus.channel)))
 
     @coroutine
     def _monitor_recv(self):

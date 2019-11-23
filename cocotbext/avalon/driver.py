@@ -623,7 +623,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
         if (num_data_symbols > 1 and not hasattr(self.bus, 'empty')):
             raise AttributeError(
                 "%s has %i data symbols, but contains no object named empty" %
-                (self.name, num_data_symbols))
+                (str(self), num_data_symbols))
 
         self.use_empty = (num_data_symbols > 1)
         self.config["useEmpty"] = self.use_empty
@@ -649,7 +649,7 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
         if hasattr(self.bus, 'channel'):
             if len(self.bus.channel) > 128:
                 raise AttributeError("Avalon-ST interface specification defines channel width as 1-128. "
-                                     "%d channel width is %d" % (self.name, len(self.bus.channel)))
+                                     "%d channel width is %d" % (str(self), len(self.bus.channel)))
             maxChannel = (2 ** len(self.bus.channel)) -1
             if self.config['maxChannel'] > maxChannel:
                 raise AttributeError("%s has maxChannel=%d, but can only support a maximum channel of "

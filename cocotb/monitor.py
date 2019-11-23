@@ -180,14 +180,12 @@ class BusMonitor(Monitor):
 
         self._reset = kwargs.pop('reset', None)
         self._reset_n = kwargs.pop('reset_n', None)
-        self.log = SimLog("cocotb.%s.%s" % (entity._name, name))
-        self.entity = entity
-        self.name = name
         self.clock = clock
         self.bus = Bus(
             entity, name, self._signals, optional_signals=self._optional_signals,
             **kwargs
         )
+        self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__, str(self.bus)))
 
         Monitor.__init__(self, callback=callback, event=event)
 
@@ -201,4 +199,7 @@ class BusMonitor(Monitor):
         return False
 
     def __str__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.name)
+        return str(self.bus) + "_monitor"
+
+    def __repr__(self):
+        return "{}({!r})".format(self.__class__.__name__, self.bus)
