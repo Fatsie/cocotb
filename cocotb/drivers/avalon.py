@@ -245,9 +245,11 @@ class AvalonMemory(BusDriver):
                  readlatency_max=1, memory=None, avl_properties={}, **kwargs):
         BusDriver.__init__(self, entity, name, clock, **kwargs)
 
-        if avl_properties != {}:
-            for key, value in self._avalon_properties.items():
-                self._avalon_properties[key] = avl_properties.get(key, value)
+        for key, value in avl_properties.items():
+            if key in self._avalon_properties:
+                 self._avalon_properties[key] = avl_properties.get(key, value)
+            else:
+                raise ValueError("Unsupported Avalon property '{!r}'".format(key))
 
         if self._avalon_properties["burstCountUnits"] != "symbols":
             self.log.error("Only symbols burstCountUnits is supported")
