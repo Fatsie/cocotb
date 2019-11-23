@@ -30,7 +30,11 @@
 """Common bus related functionality.
 A bus is simply defined as a collection of signals.
 """
+from abc import abstractproperty
+
 from cocotb.handle import AssignmentResult
+from cocotb.triggers import Edge, RisingEdge, FallingEdge
+from cocotb._py_compat import abc_ABC
 
 def _build_sig_attr_dict(signals):
     if isinstance(signals, dict):
@@ -195,3 +199,97 @@ class Bus(object):
         """Overload the less than or equal to operator for value assignment"""
         self.drive(value)
         return AssignmentResult(self, value)
+
+
+class TypedBus(Bus, abc_ABC):
+    """A bus with the set of allowed signal names baked into the type."""
+
+    #: `iterable(str), class abstractproperty attribute`
+    #:
+    #: The names of the needed bus signals; may not be empty.
+    _signals = abstractproperty()
+    #: `iterable(str), class attribute`
+    #:
+    #: The names of the optional bus sugnals.
+    _optional_signals = []
+
+    def __init__(self, entity, name, **kwargs):
+        """
+        Args:
+            entity: see :class:`Bus`
+            name: see :class:`Bus`
+            bus_separator: see :class:`Bus`
+            array_idx: see :class:`Bus`
+            signals (dict): default: {}, the signals dict has changed meaning from the base
+                :class:`Bus`. It can now only be used to give aliases to allowed bus signals.
+                ``optional_signals`` is not allowed anymore as parameters.
+        """
+        abc_ABC.__init__(self)
+        signals = kwargs.pop('signals', {})
+        if "optional_signals" in kwargs:
+            raise ValueError("optional_signals is not a valid argument for TypedBus")
+
+        _signals = _build_sig_attr_dict(self._signals).copy()
+        _optional_signals = _build_sig_attr_dict(self._optional_signals).copy()
+        for n, alias in signals.items():
+            if n in signals:
+                _signals[n] = alias
+            elif n in optional_signals:
+                _optional_signals[n] = alias
+            else:
+                raise ValueError(
+                    "Passed a signal name '{!r}' that is not part of this bus".format(n)
+                )
+
+        Bus.__init__(self, entity, name, _signals, _optional_signals, **kwargs)
+
+
+class ClockedBus(TypedBus):
+    """A ``TypedBus`` that has a clock signal and optionally a reset signal."""
+
+    def __init__(self, entity, name, **kwargs):
+        """
+        Args:
+            entity: see :class:`Bus`.
+            name: see :class:`Bus`.
+            bus_separator: see :class:`Bus`.
+            array_idx: see :class:`Bus`.
+            signals: see :class:`TypedBus`.
+            clock (SimHandle): the clock signal.
+            rising (bool, optional): Wether to use the rising edge of the clock; default: ``True``
+                Use ``True`` for ``RisingEdge(clock)`` event, ``False`` for
+                ``FallingEdge(clock)`` and ``None`` for ``Edge(clock)``.
+            reset (SimHandle, optional): the reset signal.
+            reset_active_low (bool, optional): defaults to ``False``.
+
+        .. attribute:: clock_event
+
+            :any:`Trigger` object corresponding with the clock edge.
+
+        """
+        clock = kwargs.pop('clock')
+        rising = kwargs.pop('rising', True)
+        self._reset = kwargs.pop('reset', None)
+        self._reset_active_low = kwargs.pop('reset_active_low', False)
+        TypedBus.__init__(self, entity, name, **kwargs)
+
+        if rising is None:
+            self.clock_event = Edge(clock)
+        elif rising:
+            self.clock_event = RisingEdge(clock)
+        else:
+            self.clock_event = FallingEdge(clock)
+
+    @property
+    def in_reset(self):
+        """Boolean flag showing wether the bus is in reset state or not."""
+
+        if self._reset is None:
+            # Bus not in reset if it does not have a reset signal
+            return False
+
+        reset = bool(self._reset.value.integer)
+        if not self._reset_active_low:
+            return reset
+        else:
+            return not reset

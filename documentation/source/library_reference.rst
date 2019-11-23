@@ -43,10 +43,6 @@ Interacting with the Simulator
     :members:
     :member-order: bysource
 
-.. autoclass:: cocotb.bus.Bus
-    :members:
-    :member-order: bysource
-
 .. autoclass:: cocotb.clock.Clock
 
 .. autofunction:: cocotb.fork
@@ -54,6 +50,28 @@ Interacting with the Simulator
 .. autofunction:: cocotb.decorators.RunningCoroutine.join
 
 .. autofunction:: cocotb.decorators.RunningCoroutine.kill
+
+Buses
+-----
+
+.. automodule:: cocotb.bus
+
+.. currentmodule:: cocotb.bus
+
+.. autoclass:: Bus
+    :members:
+    :member-order: bysource
+
+.. autoclass:: TypedBus
+    :members:
+    :member-order: bysource
+
+    .. autoattribute:: _signals
+    .. autoattribute:: _optional_signals
+
+.. autoclass:: ClockedBus
+    :members:
+    :member-order: bysource
 
 Triggers
 --------
