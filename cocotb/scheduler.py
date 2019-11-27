@@ -210,10 +210,9 @@ class Scheduler(object):
     _MODE_WRITE    = 3  # noqa
     _MODE_TERM     = 4  # noqa
 
-    # Singleton events, recycled to avoid spurious object creation
-    _next_time_step = NextTimeStep()
-    _read_write = ReadWrite()
-    _read_only = ReadOnly()
+    # Cache Timer(1) so that Scheduler can rely on the fact this object is the
+    # same everywhere. Caching of ReadOnly, ReadWrite and NextTimeStep is not
+    # needed as that is taken care of by the Singleton class.
     _timer1 = Timer(1)
 
     def __init__(self):
@@ -257,9 +256,9 @@ class Scheduler(object):
         while True:
             yield self._writes_pending.wait()
             if self._mode != Scheduler._MODE_NORMAL:
-                yield self._next_time_step
+                yield NextTimeStep()
 
-            yield self._read_write
+            yield ReadWrite()
 
             while self._writes:
                 handle, value = self._writes.popitem()
@@ -381,7 +380,7 @@ class Scheduler(object):
                                    str(trigger))
                 return
 
-            if trigger is self._read_only:
+            if trigger is ReadOnly():
                 self._mode = Scheduler._MODE_READONLY
             # Only GPI triggers affect the simulator scheduling mode
             elif isinstance(trigger, GPITrigger):
