@@ -37,7 +37,7 @@ import warnings
 from cocotb.utils import hexdump
 from cocotb.decorators import coroutine
 from cocotb.monitors import BusMonitor
-from cocotb.triggers import RisingEdge, ReadOnly
+from cocotb.triggers import RisingEdge, ReadOnly, StableCondition
 from cocotb.binary import BinaryValue
 
 class AvalonProtocolError(Exception):
@@ -69,23 +69,17 @@ class AvalonST(BusMonitor):
     def _monitor_recv(self):
         """Watch the pins and reconstruct transactions."""
 
-        # Avoid spurious object creation by recycling
-        clkedge = RisingEdge(self.clock)
-        rdonly = ReadOnly()
-
         def valid():
             if hasattr(self.bus, "ready"):
                 return self.bus.valid.value and self.bus.ready.value
             return self.bus.valid.value
 
-        # NB could yield on valid here more efficiently?
         while True:
-            yield clkedge
-            yield rdonly
-            if valid():
-                vec = self.bus.data.value
-                vec.big_endian = self.config["firstSymbolInHighOrderBits"]
-                self._recv(vec.buff)
+            yield RisingEdge(self.clock)
+            yield StableCondition(valid, event=RisingEdge(self.clock))
+            vec = self.bus.data.value
+            vec.big_endian = self.config["firstSymbolInHighOrderBits"]
+            self._recv(vec.buff)
 
 
 class AvalonSTPkts(BusMonitor):
@@ -153,9 +147,6 @@ class AvalonSTPkts(BusMonitor):
     def _monitor_recv(self):
         """Watch the pins and reconstruct transactions."""
 
-        # Avoid spurious object creation by recycling
-        clkedge = RisingEdge(self.clock)
-        rdonly = ReadOnly()
         pkt = ""
         in_pkt = False
         invalid_cyclecount = 0
@@ -167,8 +158,8 @@ class AvalonSTPkts(BusMonitor):
             return self.bus.valid.value
 
         while True:
-            yield clkedge
-            yield rdonly
+            yield RisingEdge(self.clock)
+            yield ReadOnly()
 
             if self.in_reset:
                 continue

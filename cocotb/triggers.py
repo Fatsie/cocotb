@@ -40,8 +40,8 @@ else:
 from cocotb.log import SimLog
 from cocotb.result import ReturnValue
 from cocotb.utils import (
-    get_sim_steps, get_time_from_sim_steps, ParametrizedSingleton,
-    lazy_property,
+    get_sim_steps, get_time_from_sim_steps, Singleton, ParametrizedSingleton,
+    lazy_property, reject_remaining_kwargs
 )
 from cocotb import decorators
 from cocotb import outcomes
@@ -179,11 +179,14 @@ class Timer(GPITrigger):
 
 # This is needed to make our custom metaclass work with abc.ABCMeta used in the
 # `Trigger` base class.
+class _SingletonAndABC(Singleton, abc.ABCMeta):
+    pass
+
 class _ParameterizedSingletonAndABC(ParametrizedSingleton, abc.ABCMeta):
     pass
 
 
-class ReadOnly(_py_compat.with_metaclass(_ParameterizedSingletonAndABC, GPITrigger)):
+class ReadOnly(_py_compat.with_metaclass(_SingletonAndABC, GPITrigger)):
     """Fires when the current simulation timestep moves to the read-only phase.
 
     The read-only phase is entered when the current timestep no longer has any further delta steps.
@@ -211,7 +214,7 @@ class ReadOnly(_py_compat.with_metaclass(_ParameterizedSingletonAndABC, GPITrigg
         return self.__class__.__name__ + "(readonly)"
 
 
-class ReadWrite(_py_compat.with_metaclass(_ParameterizedSingletonAndABC, GPITrigger)):
+class ReadWrite(_py_compat.with_metaclass(_SingletonAndABC, GPITrigger)):
     """Fires when the read-write portion of the sim cycles is reached."""
     __slots__ = ()
 
@@ -235,7 +238,7 @@ class ReadWrite(_py_compat.with_metaclass(_ParameterizedSingletonAndABC, GPITrig
         return self.__class__.__name__ + "(readwritesync)"
 
 
-class NextTimeStep(_py_compat.with_metaclass(_ParameterizedSingletonAndABC, GPITrigger)):
+class NextTimeStep(_py_compat.with_metaclass(_SingletonAndABC, GPITrigger)):
     """Fires when the next time step is started."""
     __slots__ = ()
 
@@ -729,3 +732,73 @@ class ClockCycles(Waitable):
         for _ in range(self.num_cycles):
             yield trigger
         raise ReturnValue(self)
+
+
+class StableCondition(Waitable):
+    """
+    Wait until a given condition is True in ReadOnly state.
+
+    The trigger will first do ``yield ReadOnly()`` and then do the check.
+
+    Args:
+        condition (callable): Output of condition called without any parameters
+            is checked to be equivalent of logic True for condition to be met.
+        event (Trigger): event after which to check the condition; defaults to
+            :class:`NextTimeStep`.
+        extra_event (bool): whether to wait for an extra event after condition
+            is met; defaults to ``False``.
+
+    Example:
+
+    .. code-block:: python
+
+        # Wait for ack
+        yield StableCondition(
+            lambda: bus.cycle.integer and bus.ack.integer,
+            event=RisingEdge(dut.clk)
+        )
+
+    .. versionadded: 1.3
+    """
+    def __init__(self, condition, **kwargs):
+        event = kwargs.pop('event', NextTimeStep())
+        extra_event = kwargs.pop('extra_event', False)
+        reject_remaining_kwargs('StableCondition.__init__', kwargs)
+        self.condition = condition
+        self.event = event
+        self.extra_event = extra_event
+
+    @decorators.coroutine
+    def _wait(self):
+        while True:
+            yield ReadOnly()
+            if self.condition():
+                break
+            yield self.event
+        if self.extra_event:
+            yield self.event
+
+
+class StableValue(StableCondition):
+    """
+    Wait until a signal has a given value in ReadOnly state.
+
+    The trigger will first do ``yield ReadOnly()`` and then do the comparison.
+
+    Args:
+        signal (SimHandle): the signal to monitor.
+        value (int, 0 or 1): value to wait for.
+        **kwargs: keyword arguments passed on to :class:`StableCondition`.
+            The default for ``event`` is changed to ``Edge(signal)``. This is
+            equivalent to ``RisingEdge(signal)`` when waiting for 1 and
+            ``FallingEdge(signal)`` when waiting for 0.
+
+    .. versionadded: 1.3
+    """
+    def __init__(self, signal, value, **kwargs):
+        if value not in (0, 1):
+            raise ValueError("value has to be 0 or 1")
+        event = kwargs.pop('event', Edge(signal))
+
+        StableCondition.__init__(self, lambda: signal.value.integer == value,
+                                 event=event, **kwargs)

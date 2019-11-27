@@ -36,7 +36,8 @@ import random
 
 import cocotb
 from cocotb.decorators import coroutine
-from cocotb.triggers import RisingEdge, FallingEdge, ReadOnly, NextTimeStep, Event
+from cocotb.triggers import (RisingEdge, FallingEdge, ReadOnly, NextTimeStep, Event,
+                             StableValue)
 from cocotb.drivers import BusDriver, ValidatedBusDriver
 from cocotb.utils import hexdump
 from cocotb.binary import BinaryValue
@@ -151,7 +152,7 @@ class AvalonMaster(AvalonMM):
 
         # Wait for waitrequest to be low
         if hasattr(self.bus, "waitrequest"):
-            yield self._wait_for_nsignal(self.bus.waitrequest)
+            yield StableValue(self.bus.waitrequest, 0, extra_event=True)
         yield RisingEdge(self.clock)
 
         # Deassert read
@@ -165,11 +166,7 @@ class AvalonMaster(AvalonMM):
         self.bus.address <= v
 
         if hasattr(self.bus, "readdatavalid"):
-            while True:
-                yield ReadOnly()
-                if int(self.bus.readdatavalid):
-                    break
-                yield RisingEdge(self.clock)
+            yield StableValue(self.bus.readdatavalid, 1, event=RisingEdge(self.clock))
         else:
             # Assume readLatency = 1 if no readdatavalid
             # FIXME need to configure this,
@@ -212,7 +209,7 @@ class AvalonMaster(AvalonMM):
 
         # Wait for waitrequest to be low
         if hasattr(self.bus, "waitrequest"):
-            count = yield self._wait_for_nsignal(self.bus.waitrequest)
+            yield StableValue(self.bus.waitrequest, 0, event=RisingEdge(self.clock))
 
         # Deassert write
         yield RisingEdge(self.clock)
@@ -387,9 +384,8 @@ class AvalonMemory(BusDriver):
     @coroutine
     def _respond(self):
         """Coroutine to respond to the actual requests."""
-        edge = RisingEdge(self.clock)
         while True:
-            yield edge
+            yield RisingEdge(self.clock)
             self._do_response()
 
             yield ReadOnly()
@@ -427,13 +423,13 @@ class AvalonMemory(BusDriver):
                     # TODO: configure waitrequest time with Avalon properties
                     yield NextTimeStep()  # can't write during read-only phase
                     self.bus.waitrequest <= 1
-                    yield edge
-                    yield edge
+                    yield RisingEdge(self.clock)
+                    yield RisingEdge(self.clock)
                     self.bus.waitrequest <= 0
 
                     # wait for read data
                     for i in range(self._avalon_properties["readLatency"]):
-                        yield edge
+                        yield RisingEdge(self.clock)
                     for count in range(burstcount):
                         if (addr + count)*self.dataByteSize not in self._mem:
                             self.log.warning("Attempt to burst read from uninitialized "
@@ -448,7 +444,7 @@ class AvalonMemory(BusDriver):
                             self.log.debug("Read from address 0x%x returning 0x%x",
                                            (addr + count) * self.dataByteSize, value)
                             self._responses.append(value)
-                        yield edge
+                        yield RisingEdge(self.clock)
                         self._do_response()
 
             if self._writeable and self.bus.write.value:
@@ -496,7 +492,7 @@ class AvalonMemory(BusDriver):
                         self.log.debug("writing %016X @ %08X",
                                        self.bus.writedata.value.integer,
                                        addr + count * self.dataByteSize)
-                        yield edge
+                        yield RisingEdge(self.clock)
                         # generate waitrequest randomly
                         yield self._waitrequest()
 
@@ -550,22 +546,19 @@ class AvalonST(ValidatedBusDriver):
         """
         self.log.debug("Sending Avalon transmission: %r", value)
 
-        # Avoid spurious object creation by recycling
-        clkedge = RisingEdge(self.clock)
-
         word = BinaryValue(n_bits=len(self.bus.data), bigEndian=False)
 
         # Drive some defaults since we don't know what state we're in
         self.bus.valid <= 0
 
         if sync:
-            yield clkedge
+            yield RisingEdge(self.clock)
 
         # Insert a gap where valid is low
         if not self.on:
             self.bus.valid <= 0
             for _ in range(self.off):
-                yield clkedge
+                yield RisingEdge(self.clock)
 
             # Grab the next set of on/off values
             self._next_valids()
@@ -584,7 +577,7 @@ class AvalonST(ValidatedBusDriver):
         if hasattr(self.bus, "ready"):
             yield self._wait_ready()
 
-        yield clkedge
+        yield RisingEdge(self.clock)
         self.bus.valid <= 0
         word.binstr   = "x" * len(self.bus.data)
         self.bus.data <= word
@@ -681,7 +674,6 @@ class AvalonSTPkts(ValidatedBusDriver):
             channel (int): Channel to send the data on.
         """
         # Avoid spurious object creation by recycling
-        clkedge = RisingEdge(self.clock)
         firstword = True
 
         # FIXME: buses that aren't an integer numbers of bytes
@@ -710,13 +702,13 @@ class AvalonSTPkts(ValidatedBusDriver):
 
         while string:
             if not firstword or (firstword and sync):
-                yield clkedge
+                yield RisingEdge(self.clock)
 
             # Insert a gap where valid is low
             if not self.on:
                 self.bus.valid <= 0
                 for _ in range(self.off):
-                    yield clkedge
+                    yield RisingEdge(self.clock)
 
                 # Grab the next set of on/off values
                 self._next_valids()
@@ -760,7 +752,7 @@ class AvalonSTPkts(ValidatedBusDriver):
             if hasattr(self.bus, "ready"):
                 yield self._wait_ready()
 
-        yield clkedge
+        yield RisingEdge(self.clock)
         self.bus.valid <= 0
         self.bus.endofpacket <= 0
         word.binstr   = "x" * len(self.bus.data)
@@ -783,12 +775,11 @@ class AvalonSTPkts(ValidatedBusDriver):
             pkt (iterable): Will yield objects with attributes matching the
                 signal names for each individual bus cycle.
         """
-        clkedge = RisingEdge(self.clock)
         firstword = True
 
         for word in pkt:
             if not firstword or (firstword and sync):
-                yield clkedge
+                yield RisingEdge(self.clock)
 
             firstword = False
 
@@ -796,7 +787,7 @@ class AvalonSTPkts(ValidatedBusDriver):
             if not self.on:
                 self.bus.valid <= 0
                 for _ in range(self.off):
-                    yield clkedge
+                    yield RisingEdge(self.clock)
 
                 # Grab the next set of on/off values
                 self._next_valids()
@@ -815,7 +806,7 @@ class AvalonSTPkts(ValidatedBusDriver):
                 if hasattr(self.bus, "ready"):
                     yield self._wait_ready()
 
-        yield clkedge
+        yield RisingEdge(self.clock)
         self.bus.valid <= 0
 
     @coroutine
@@ -832,7 +823,6 @@ class AvalonSTPkts(ValidatedBusDriver):
         attributes matching the signal names.
         """
 
-        # Avoid spurious object creation by recycling
         if isinstance(pkt, str):
             self.log.debug("Sending packet of length %d bytes", len(pkt))
             self.log.debug(hexdump(pkt))
