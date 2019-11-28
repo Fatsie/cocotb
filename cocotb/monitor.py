@@ -34,6 +34,7 @@ the transactions.
 """
 
 from collections import deque
+from abc import abstractproperty
 
 import cocotb
 from cocotb.bus import Bus
@@ -41,6 +42,7 @@ from cocotb.decorators import coroutine
 from cocotb.log import SimLog
 from cocotb.result import ReturnValue
 from cocotb.triggers import Event, Timer
+from cocotb._py_compat import abc_ABC
 
 
 class MonitorStatistics(object):
@@ -169,22 +171,27 @@ class Monitor(object):
             self._wait_event.clear()
 
 
-class BusMonitor(Monitor):
-    """Wrapper providing common functionality for monitoring buses."""
-    _signals = []
-    _optional_signals = []
+class BusMonitor(Monitor, abc_ABC):
+    """Passive Bus Monitor
+
+    Attrs:
+        _bus_type (class, abstract property): the type of bus to drive
+
+    Args:
+        bus_kwargs (dict): Keyword arguments forwarded to :class:`BusDriver._bus_type`,
+            see docs for that class for more information.
+    """
+    _bus_type = abstractproperty()
 
     def __init__(self, **kwargs):
         callback = kwargs.pop('callback', None)
         event = kwargs.pop('event', None)
+        abc_ABC.__init__(self)
 
         self._reset = kwargs.pop('reset', None)
         self._reset_n = kwargs.pop('reset_n', None)
-        self.clock = kwargs.pop('clock')
-        self.bus = Bus(
-            signals=self._signals, optional_signals=self._optional_signals,
-            **kwargs
-        )
+        self.clock = kwargs.get('clock')
+        self.bus = self.__class__._bus_type(**kwargs)
         self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__, str(self.bus)))
 
         Monitor.__init__(self, callback=callback, event=event)

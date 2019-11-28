@@ -38,6 +38,8 @@ from cocotb.monitor import BusMonitor
 from cocotb.triggers import RisingEdge, ReadOnly, StableCondition
 from cocotb.binary import BinaryValue
 
+from .bus import AvalonSTBus, AvalonSTPktsBus
+
 class AvalonProtocolError(Exception):
     pass
 
@@ -48,8 +50,7 @@ class AvalonSTMonitor(BusMonitor):
     Non-packetized so each valid word is a separate transaction.
     """
 
-    _signals = ["valid", "data"]
-    _optional_signals = ["ready"]
+    _bus_type = AvalonSTBus
 
     _default_config = {"firstSymbolInHighOrderBits": True}
 
@@ -90,8 +91,7 @@ class AvalonSTPktsMonitor(BusMonitor):
         **kwargs (dict): keyword arguments passed on to :class:`BusMonitor`
     """
 
-    _signals = ["valid", "data", "startofpacket", "endofpacket"]
-    _optional_signals = ["error", "channel", "ready", "empty"]
+    _bus_type = AvalonSTPktsBus
 
     _default_config = {
         "dataBitsPerSymbol"             : 8,

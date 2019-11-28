@@ -30,12 +30,14 @@
 """Set of common driver base classes."""
 
 from collections import deque
+from abc import abstractproperty
 
 import cocotb
 from cocotb.decorators import coroutine
 from cocotb.triggers import Event, RisingEdge, NextTimeStep, StableValue
 from cocotb.bus import Bus
 from cocotb.log import SimLog
+from cocotb._py_compat import abc_ABC
 
 
 class BitDriver(object):
@@ -202,26 +204,22 @@ class Driver(object):
                 synchronised = True
 
 
-class BusDriver(Driver):
-    """Wrapper around common functionality for buses which have:
+class BusDriver(Driver, abc_ABC):
+    """Drive bus signals and react to bus events
 
-        * a list of :attr:`_signals` (class attribute)
-        * a list of :attr:`_optional_signals` (class attribute)
+    Attrs:
+        _bus_type (class, abstract property): the type of bus to drive
 
     Args:
         bus_kwargs (dict): Keyword arguments forwarded to :class:`BusDriver._bus_type`,
             see docs for that class for more information.
     """
-    
-    _optional_signals = []
+    _bus_type = abstractproperty()
 
     def __init__(self, **bus_kwargs):
         Driver.__init__(self)
-        self.clock = bus_kwargs.pop('clock')
-        self.bus = Bus(
-            signals=self._signals, optional_signals=self._optional_signals,
-            **bus_kwargs
-        )
+        self.clock = bus_kwargs.get('clock')
+        self.bus = self.__class__._bus_type(**bus_kwargs)
         self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__,  str(self.bus)))
 
     @coroutine
