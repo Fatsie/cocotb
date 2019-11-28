@@ -82,7 +82,7 @@ class Wishbone(BusDriver):
         v.binstr = "1" * len(self.bus.sel)
         self.bus.sel <= v
 
-
+@public
 class WishboneMaster(Wishbone):
     """
     Wishbone master

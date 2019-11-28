@@ -57,7 +57,7 @@ class Wishbone(BusMonitor):
     
 
             
-
+@public
 class WishboneSlave(Wishbone):
     """Wishbone slave
     """
