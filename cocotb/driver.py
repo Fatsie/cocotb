@@ -216,7 +216,6 @@ class BusDriver(Driver):
     _optional_signals = []
 
     def __init__(self, **bus_kwargs):
-        index = bus_kwargs.get("array_idx", None)
         Driver.__init__(self)
         self.clock = bus_kwargs.pop('clock')
         self.bus = Bus(
