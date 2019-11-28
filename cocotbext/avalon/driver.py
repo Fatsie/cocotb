@@ -60,8 +60,8 @@ class AvalonMMDriver(BusDriver):
                          "cs"]
 
 
-    def __init__(self, entity, name, clock, **kwargs):
-        BusDriver.__init__(self, entity, name, clock, **kwargs)
+    def __init__(self, **bus_kwargs):
+        BusDriver.__init__(self, **bus_kwargs)
         self._can_read = False
         self._can_write = False
 
@@ -96,8 +96,8 @@ class AvalonMMDriver(BusDriver):
 
 class AvalonMMMaster(AvalonMMDriver):
     """Avalon Memory Mapped Interface (Avalon-MM) Master."""
-    def __init__(self, entity, name, clock, **kwargs):
-        AvalonMMDriver.__init__(self, entity, name, clock, **kwargs)
+    def __init__(self, **bus_kwargs):
+        AvalonMMDriver.__init__(self, **kwargs)
         self.log.debug("AvalonMMMaster created")
         self.busy_event = Event("%s_busy" % name)
         self.busy = False
@@ -241,12 +241,14 @@ class AvalonMemory(BusDriver):
             "MaxWaitReqLen": 4,  # maximum value of waitrequest
             }
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         readlatency_min = kwargs.pop('readlatency_min', 1)
         readlatency_max = kwargs.pop('readlatency_max', 1)
         memory = kwargs.pop('memory', None)
         avl_properties = kwargs.pop('avl_properties', {})
-        BusDriver.__init__(self, entity, name, clock, **kwargs)
+        BusDriver.__init__(self, **kwargs)
+        if hasattr(self.bus, "cs"):
+            self.log.error("cs signal not handled by AvalonMemory")
 
         for key, value in avl_properties.items():
             if key in self._avalon_properties:
@@ -513,9 +515,9 @@ class AvalonSTDriver(ValidatedBusDriver):
 
     _default_config = {"firstSymbolInHighOrderBits" : True}
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         config = kwargs.pop('config', {})
-        ValidatedBusDriver.__init__(self, entity, name, clock, **kwargs)
+        ValidatedBusDriver.__init__(self, **kwargs)
 
         self.config = AvalonSTDriver._default_config.copy()
 
@@ -603,9 +605,9 @@ class AvalonSTPktsDriver(ValidatedBusDriver):
         "readyLatency"                  : 0
     }
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         config = kwargs.pop('config', {})
-        ValidatedBusDriver.__init__(self, entity, name, clock, **kwargs)
+        ValidatedBusDriver.__init__(self, **kwargs)
 
         self.config = AvalonSTPktsDriver._default_config.copy()
 

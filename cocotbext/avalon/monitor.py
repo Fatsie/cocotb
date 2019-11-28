@@ -53,9 +53,9 @@ class AvalonSTMonitor(BusMonitor):
 
     _default_config = {"firstSymbolInHighOrderBits": True}
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         config = kwargs.pop('config', {})
-        BusMonitor.__init__(self, entity, name, clock, **kwargs)
+        BusMonitor.__init__(self, **kwargs)
 
         self.config = self._default_config.copy()
 
@@ -84,10 +84,10 @@ class AvalonSTPktsMonitor(BusMonitor):
     """Packetized Avalon-ST bus.
 
     Args:
-        entity, name, clock: see :class:`BusMonitor`
         config (dict): bus configuration options
         report_channel (bool): report channel with data, default is False
             Setting to True on bus without channel signal will give an error
+        **kwargs (dict): keyword arguments passed on to :class:`BusMonitor`
     """
 
     _signals = ["valid", "data", "startofpacket", "endofpacket"]
@@ -101,10 +101,10 @@ class AvalonSTPktsMonitor(BusMonitor):
         "invalidTimeout"                : 0,
     }
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         config = kwargs.pop('config', {})
         report_channel = kwargs.pop('report_channel', False)
-        BusMonitor.__init__(self, entity, name , clock, **kwargs)
+        BusMonitor.__init__(self, **kwargs)
 
         self.config = self._default_config.copy()
         self.report_channel = report_channel

@@ -22,8 +22,8 @@ class AvalonSTTB(object):
 
         self.clkedge = RisingEdge(dut.clk)
 
-        self.stream_in = AvalonSTDriver(self.dut, "asi", dut.clk)
-        self.stream_out = AvalonSTMonitor(self.dut, "aso", dut.clk)
+        self.stream_in = AvalonSTDriver(entity=self.dut, name="asi", clock=dut.clk)
+        self.stream_out = AvalonSTMonitor(entity=self.dut, name="aso", clock=dut.clk)
         self.scoreboard = Scoreboard(self.dut, fail_immediately=True)
 
         self.expected_output = []

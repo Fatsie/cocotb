@@ -174,15 +174,15 @@ class BusMonitor(Monitor):
     _signals = []
     _optional_signals = []
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         callback = kwargs.pop('callback', None)
         event = kwargs.pop('event', None)
 
         self._reset = kwargs.pop('reset', None)
         self._reset_n = kwargs.pop('reset_n', None)
-        self.clock = clock
+        self.clock = kwargs.pop('clock')
         self.bus = Bus(
-            entity, name, self._signals, optional_signals=self._optional_signals,
+            signals=self._signals, optional_signals=self._optional_signals,
             **kwargs
         )
         self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__, str(self.bus)))

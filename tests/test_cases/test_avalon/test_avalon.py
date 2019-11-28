@@ -57,7 +57,7 @@ class BurstAvlReadTest(object):
         # Bytes aligned memory
         self.memdict = {value: value for value in range(0x1000)}
 
-        self.avl32 = AvalonMemory(dut, "master", dut.clk,
+        self.avl32 = AvalonMemory(entity=dut, name="master", clock=dut.clk,
                                   memory=self.memdict,
                                   readlatency_min=0,
                                   avl_properties=avlproperties)

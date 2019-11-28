@@ -207,33 +207,23 @@ class BusDriver(Driver):
 
         * a list of :attr:`_signals` (class attribute)
         * a list of :attr:`_optional_signals` (class attribute)
-        * a clock
-        * a name
-        * an entity
 
     Args:
-        entity (SimHandle): A handle to the simulator entity.
-        name (str or None): Name of this bus. ``None`` for a nameless bus, e.g.
-            bus-signals in an interface or a ``modport``.
-            (untested on ``struct``/``record``, but could work here as well).
-        clock (SimHandle): A handle to the clock associated with this bus.
-        **kwargs (dict): Keyword arguments forwarded to :class:`cocotb.Bus`,
+        bus_kwargs (dict): Keyword arguments forwarded to :class:`BusDriver._bus_type`,
             see docs for that class for more information.
-
     """
     
     _optional_signals = []
 
-    def __init__(self, entity, name, clock, **kwargs):
-        index = kwargs.get("array_idx", None)
-
-        self.log = SimLog("cocotb.%s.%s" % (entity._name, name))
+    def __init__(self, **bus_kwargs):
+        index = bus_kwargs.get("array_idx", None)
         Driver.__init__(self)
-        self.clock = clock
+        self.clock = bus_kwargs.pop('clock')
         self.bus = Bus(
-            entity, name, self._signals, optional_signals=self._optional_signals,
-            **kwargs
+            signals=self._signals, optional_signals=self._optional_signals,
+            **bus_kwargs
         )
+        self.log = SimLog("cocotb.{}.{}".format(self.__class__.__name__,  str(self.bus)))
 
     @coroutine
     def _driver_send(self, transaction, sync=True):
@@ -259,16 +249,15 @@ class ValidatedBusDriver(BusDriver):
     to control which cycles are valid.
 
     Args:
-        entity (SimHandle): A handle to the simulator entity.
-        name (str): Name of this bus.
-        clock (SimHandle): A handle to the clock associated with this bus.
         valid_generator (generator, optional): a generator that yields tuples of
             ``(valid, invalid)`` cycles to insert.
+        bus_kwargs: dict. The rest of the keyword argument are passed to parent class
+            as the bus keyword arguments.
     """
 
-    def __init__(self, entity, name, clock, **kwargs):
+    def __init__(self, **kwargs):
         valid_generator = kwargs.pop("valid_generator", None)
-        BusDriver.__init__(self, entity, name, clock, **kwargs)
+        BusDriver.__init__(self, **kwargs)
         self.set_valid_generator(valid_generator=valid_generator)
 
     def _next_valids(self):
